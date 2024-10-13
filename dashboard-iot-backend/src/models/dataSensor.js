@@ -32,6 +32,16 @@ const countNumberDataSensorByCondition = async (condition) => {
   });
 };
 
+const countDataGreater = async (x) => {
+  return await prisma.sensorData.count({
+    where: {
+      gas: {
+        gt: Number(x)
+      }
+    }
+  });
+};
+
 const countHighLightOccurrencesAbove800 = async () => {
   const today = new Date();
 
@@ -54,10 +64,21 @@ const countHighLightOccurrencesAbove800 = async () => {
   return result._max.light;
 };
 
+const get10datalast = async () => {
+  return await prisma.sensorData.findMany({
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take: 10,
+  })
+}
+
 module.exports = {
   createDataSensor,
   deleteOldRecords,
   findDataSensorByContidion,
   countNumberDataSensorByCondition,
-  countHighLightOccurrencesAbove800
+  countHighLightOccurrencesAbove800,
+  get10datalast,
+  countDataGreater
 };

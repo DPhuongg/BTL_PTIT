@@ -1,6 +1,7 @@
 const dataSensorModel = require('../models/dataSensor');
 const { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, TIME_ZONE } = require('../constant');
 const { fromZonedTime } = require('date-fns-tz');
+const { convertUtcToVnTime } = require('../util');
 
 async function postDataSensor(req, res) {
   try {
@@ -32,6 +33,33 @@ async function getDataLight(req, res) {
   }
 }
 
+async function get10DataLast(req, res) {
+  try {
+    const data = await dataSensorModel.get10datalast();
+    res.status(200).json({
+      data: data
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal Server Error !',
+      error
+    });
+  }
+}
+
+async function countData(req, res) {
+  try {
+    const conSoGiDo = 50;
+    const count = await dataSensorModel.countDataGreater(conSoGiDo);
+    res.status(200).json(count)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal Server Error !',
+      error
+    });
+  }
+}
+
 async function getDataSensors(req, res) {
   try {
     let { content, searchBy, startTime, endTime, page, pageSize, sortBy, orderBy } = req.query;
@@ -46,42 +74,44 @@ async function getDataSensors(req, res) {
       take: pageSize
     };
 
-    content = Number(content);
     if (content && searchBy) {
+
       switch (searchBy) {
         case 'ID':
-          condition.id = content;
+          condition.id = Number(content);
           break;
         case 'TEMPERATURE':
-          condition.temperature = content;
+          condition.temperature = Number(content);
           break;
         case 'HUMIDITY':
-          condition.humidity = content;
+          condition.humidity = Number(content);
           break;
         case 'LIGHT':
-          condition.light = content;
+          condition.light = Number(content);
           break;
         case 'GAS':
-          condition.gas = content;
+          condition.gas = Number(content);
           break;
         case 'ALL':
           condition.OR = [
             {
-              id: content
+              id: Number(content)
             },
             {
-              temperature: content
+              temperature: Number(content)
             },
             {
-              humidity: content
+              humidity: Number(content)
             },
             {
-              light: content
+              light: Number(content)
             },
             {
-              gas: content
+              gas: Number(content)
             }
           ];
+          break;
+        case 'TIME':
           break;
         default:
           res.status(400).json({
@@ -135,10 +165,17 @@ async function getDataSensors(req, res) {
       }
     } else order.id = orderBy;
 
-    const [data, totalCount] = await Promise.all([
+    let [data, totalCount] = await Promise.all([
       await dataSensorModel.findDataSensorByContidion(condition, pagination, order),
       await dataSensorModel.countNumberDataSensorByCondition(condition)
     ]);
+
+    if (searchBy == 'TIME' && content.length > 0) {
+      data = data.filter(d => {
+        const time = convertUtcToVnTime(d.createdAt)
+        return time.includes(content.trim())
+      })
+    }
 
     res.status(200).json({
       data,
@@ -159,5 +196,7 @@ async function getDataSensors(req, res) {
 module.exports = {
   postDataSensor,
   getDataSensors,
-  getDataLight
+  getDataLight,
+  get10DataLast,
+  countData
 };

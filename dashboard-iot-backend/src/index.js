@@ -61,7 +61,7 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-const topics = ['esp32/sensors', 'ledok', 'air_conditionerok', 'fanok'];
+const topics = ['esp32/sensors', 'ledOk', 'airConditionerOk', 'fanOk', 'lampOk'];
 
 mqttClient.on('connect', () => {
   topics.forEach((topic) => {
@@ -78,7 +78,7 @@ mqttClient.on('message', async (topic, message) => {
     if (topic == 'esp32/sensors') {
       const data = JSON.parse(message.toString()); //Example:  { temperature: 33, humidity: 82, light: 440 }
 
-      const gas = Math.floor(Math.random() * 101);
+      const gas = Math.floor(Math.random() * 1001);
       // Lưu dữ liệu vào MySQL
       const sensorData = {
         temperature: data.temperature,
@@ -101,7 +101,7 @@ mqttClient.on('message', async (topic, message) => {
           ); // Gửi dữ liệu đã lưu đến client
         }
       });
-    } else if (topic == 'ledok') {
+    } else if (topic == 'ledOk') {
       let saveAction = {};
       saveAction.device = 'LED';
       saveAction.action = message.toString() === 'on' ? 'ON' : 'OFF';
@@ -117,33 +117,49 @@ mqttClient.on('message', async (topic, message) => {
           ); // Gửi dữ liệu đã lưu đến client
         }
       });
-    } else if (topic == 'air_conditionerok') {
+    } else if (topic == 'airConditionerOk') {
       let saveAction = {};
       saveAction.device = 'AIR_CONDITIONER';
       saveAction.action = message.toString() === 'on' ? 'ON' : 'OFF';
-      console.log('air_conditionerok: ', message.toString());
+      console.log('airConditionerOk: ', message.toString());
       await actionHistoryModel.createActionHistory(saveAction);
       clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
-              topic: 'air_conditionerok',
+              topic: 'airConditionerOk',
               data: message.toString()
             })
           ); // Gửi dữ liệu đã lưu đến client
         }
       });
-    } else if (topic == 'fanok') {
+    } else if (topic == 'fanOk') {
       let saveAction = {};
       saveAction.device = 'FAN';
       saveAction.action = message.toString() === 'on' ? 'ON' : 'OFF';
-      console.log('fanok: ', message.toString());
+      console.log('fanOk: ', message.toString());
       await actionHistoryModel.createActionHistory(saveAction);
       clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
-              topic: 'fanok',
+              topic: 'fanOk',
+              data: message.toString()
+            })
+          ); // Gửi dữ liệu đã lưu đến client
+        }
+      });
+    } else if (topic == 'lampOk') {
+      let saveAction = {};
+      saveAction.device = 'FAN';
+      saveAction.action = message.toString() === 'on' ? 'ON' : 'OFF';
+      console.log('lampOk: ', message.toString());
+      await actionHistoryModel.createActionHistory(saveAction);
+      clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              topic: 'lampOk',
               data: message.toString()
             })
           ); // Gửi dữ liệu đã lưu đến client
