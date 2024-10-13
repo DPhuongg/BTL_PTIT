@@ -40,8 +40,23 @@ export const useWebSocketStore = create((set, get) => ({
     lights: [],
     times: [],
     gass: []
-  }, // Lưu trữ các tin nhắn nhận được
-  isOpen: false, // Trạng thái kết nối WebSocket
+  },
+  isOpen: false,
+  updateDataSensorArray: (data) => {
+    set((stage) => {
+      const newMessage = {
+        temperatures: [...stage.message.temperatures, data.temperature].slice(-10),
+        humiditys: [...stage.message.humiditys, data.humidity].slice(-10),
+        lights: [...stage.message.lights, data.light].slice(-10),
+        times: [...stage.message.times, data.createdAt].slice(-10),
+        gass: [...stage.message.gass, data.gas].slice(-10)
+      };
+      return {
+        ...stage,
+        message: newMessage
+      };
+    });
+  },
   connect: (url) => {
     const ws = new WebSocket(url);
     const updateDataSensor = useDataSensorStore.getState().updateDataSensor;

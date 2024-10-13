@@ -14,7 +14,8 @@ model SensorData {
   humidity    Int
   light       Int
   createdAt   DateTime @default(now())
-  gas        Int 
+  gas         Int
+
   @@map("sensor_data")
 }
 
@@ -31,6 +32,7 @@ enum Device {
   LED
   FAN
   AIR_CONDITIONER
+  LAMP
 }
 
 enum Action {

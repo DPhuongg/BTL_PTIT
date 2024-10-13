@@ -61,7 +61,7 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-const topics = ['esp32/sensors', 'ledOk', 'airConditionerOk', 'fanOk', 'lampOk'];
+const topics = ['esp32/sensors', 'ledOk', 'airConditionerOk', 'fanOk', 'lampOk', 'warning'];
 
 mqttClient.on('connect', () => {
   topics.forEach((topic) => {
@@ -84,7 +84,7 @@ mqttClient.on('message', async (topic, message) => {
         temperature: data.temperature,
         humidity: data.humidity,
         light: data.light,
-        gas: gas
+        gas: data.gas || gas
       };
 
       // Lưu dữ liệu vào MySQL
@@ -105,13 +105,13 @@ mqttClient.on('message', async (topic, message) => {
       let saveAction = {};
       saveAction.device = 'LED';
       saveAction.action = message.toString() === 'on' ? 'ON' : 'OFF';
-      console.log('ledok: ', message.toString());
+      console.log('ledOk: ', message.toString());
       await actionHistoryModel.createActionHistory(saveAction);
       clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
-              topic: 'ledok',
+              topic: 'ledOk',
               data: message.toString()
             })
           ); // Gửi dữ liệu đã lưu đến client
@@ -151,7 +151,7 @@ mqttClient.on('message', async (topic, message) => {
       });
     } else if (topic == 'lampOk') {
       let saveAction = {};
-      saveAction.device = 'FAN';
+      saveAction.device = 'LAMP';
       saveAction.action = message.toString() === 'on' ? 'ON' : 'OFF';
       console.log('lampOk: ', message.toString());
       await actionHistoryModel.createActionHistory(saveAction);
@@ -165,6 +165,29 @@ mqttClient.on('message', async (topic, message) => {
           ); // Gửi dữ liệu đã lưu đến client
         }
       });
+    } else if (topic == 'warning') {
+      console.log('WARNING: ', message.toString());
+
+      clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(
+            JSON.stringify({
+              topic: 'warning',
+              data: message.toString()
+            })
+          ); // Gửi dữ liệu đã lưu đến client
+        }
+      });
+      for (let i = 0; i < 5; i++) {
+        await actionHistoryModel.createActionHistory({
+          device: 'LAMP',
+          action: 'ON'
+        });
+        await actionHistoryModel.createActionHistory({
+          device: 'LAMP',
+          action: 'OFF'
+        });
+      }
     }
   } catch (error) {
     console.error('Error saving data or sending via WebSocket:', error);

@@ -10,15 +10,25 @@ import { RiWaterPercentFill } from 'react-icons/ri';
 import { MdLightMode } from 'react-icons/md';
 import '../assets/styles/home.css';
 import { useActionDeviceLoadingStore, useActionDeviceStore, useDataSensorStore, useWebSocketStore } from '../stores';
+import axiosClient from '../api/axios-client.js';
 
 function Home() {
   const { Title } = Typography;
   const { temperature, humidity, light, gas } = useDataSensorStore();
   const { isOnLed, isOnAirConditioner, isOnFan, updateActionDevice } = useActionDeviceStore();
   const { isOnLedLoading, isOnAirConditionerLoading, isOnFanLoading, updateActionDeviceLoading } = useActionDeviceLoadingStore();
-
+  const { updateDataSensorArray } = useWebSocketStore();
 
   const { sendMessage } = useWebSocketStore();
+
+  useEffect(() => {
+    const get10dataLast = async () => {
+      const res = await axiosClient.get('/data/10-data-last');
+      updateDataSensorArray(res.data);
+    }
+
+    get10dataLast();
+  }, [])
 
 
   const weatherDatas = [

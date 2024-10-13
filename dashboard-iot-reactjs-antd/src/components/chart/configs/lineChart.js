@@ -85,7 +85,7 @@ export const options = (data) => {
     ],
 
     xaxis: {
-      categories: data.times.map(t => convertUtcToVnTime(t))
+      // categories: data.times.map(t => convertUtcToVnTime(t))
     },
 
     tooltip: {
