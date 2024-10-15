@@ -1,11 +1,12 @@
-const { PAGE_DEFAULT, PAGE_SIZE_DEFAULT , TIME_ZONE} = require('../constant');
+const { PAGE_DEFAULT, PAGE_SIZE_DEFAULT, TIME_ZONE } = require('../constant');
 const { fromZonedTime } = require('date-fns-tz');
 const actionHistoryModel = require('../models/actionHistory');
 const { actionHistory } = require('../models/db-client');
+const { convertUtcToVnTime } = require('../util');
 
 async function getActionHistory(req, res) {
     try {
-        let { searchBy, startTime, endTime, page, pageSize } = req.query;
+        let { content, searchBy, startTime, endTime, page, pageSize } = req.query;
         let condition = {};
 
         page = Math.max(Number(page) || PAGE_DEFAULT, 1);
@@ -16,9 +17,9 @@ async function getActionHistory(req, res) {
             take: pageSize,
         };
 
-         searchBy ||= 'ALL';
-        if (['ALL','FAN','LED','AIR_CONDITIONER'].includes(searchBy)) {
-            if(searchBy !== 'ALL') condition.device = searchBy
+        searchBy ||= 'ALL';
+        if (['ALL', 'FAN', 'LED', 'AIR_CONDITIONER'].includes(searchBy)) {
+            if (searchBy !== 'ALL') condition.device = searchBy
         } else {
             res.status(400).json({
                 message: 'searchBy must be one of the following parameters [ALL,AIR_CONDITIONER, FAN, LED]',
@@ -33,10 +34,17 @@ async function getActionHistory(req, res) {
             }
         }
 
-        const [data, totalCount] = await Promise.all([
+        let [data, totalCount] = await Promise.all([
             await actionHistoryModel.findActionHistoryByContidion(condition, pagination),
             await actionHistoryModel.countNumberActionHistoryByCondition(condition)
-        ]) 
+        ])
+
+        if (content) {
+            data = data.filter(d => {
+                const time = convertUtcToVnTime(d.createdAt)
+                return time.includes(content.trim())
+            })
+        }
 
         res.status(200).json({
             data,
@@ -47,6 +55,7 @@ async function getActionHistory(req, res) {
             }
         })
     } catch (error) {
+        console.log("🚀 ~ getActionHistory ~ error:", error)
         res.status(500).json({
             message: 'Internal Server Error !',
             error: error.message
